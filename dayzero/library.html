@@ -6,6 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
   <style>
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .overlay {
+      height: 100vh;
+      overflow: hidden;
+    }
+
     .library-wrap{
       display:grid;
       grid-template-columns: 1.6fr 1fr;
@@ -18,6 +28,19 @@
       gap:18px;
     }
     .hint{font-size:.8rem;opacity:.6;margin-top:6px}
+    #viewerWrap{
+      width:100%;
+      height:100%;
+      border-radius:14px;
+      background:#fff;
+      overflow:auto;   /* only this area scrolls */
+    }
+
+    #viewer{
+      width:100%;
+      height:100%;
+      border:none;
+    }
     @media(max-width:900px){
       .library-wrap{grid-template-columns:1fr;height:auto}
     }
@@ -37,7 +60,9 @@
 
       <!-- LEFT -->
       <section class="card" style="height:100%">
-        <iframe id="viewer" style="width:100%;height:100%;border:none;border-radius:14px;background:#fff"></iframe>
+        <div id="viewerWrap">
+          <iframe id="viewer"></iframe>
+        </div>
       </section>
 
       <!-- RIGHT -->
@@ -45,7 +70,7 @@
 
         <div class="card">
           <h3>Open File</h3>
-          <input type="file" id="pdfFile" accept=".pdf,.txt,.md,.html,.log,.json">
+          <input type="file" id="pdfFile" accept=".pdf,.txt,.md,.html,.log,.json,.docx">
           <div id="currentFile" class="hint"></div>
           <div id="resumeHint" class="hint"></div>
         </div>
@@ -98,12 +123,16 @@
     </div>
   </div>
 
+  <!-- Mammoth for Word files -->
+  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+
   <script>
     const t = localStorage.getItem("dayzero-theme") || "pastel";
     document.documentElement.setAttribute("data-theme", t);
 
     const pdfFile = document.getElementById("pdfFile");
     const viewer = document.getElementById("viewer");
+    const viewerWrap = document.getElementById("viewerWrap");
     const currentFile = document.getElementById("currentFile");
     const resumeHint = document.getElementById("resumeHint");
 
@@ -129,18 +158,6 @@
 
     let activePDF = null;
 
-    const last = localStorage.getItem("dayzero-last-pdf");
-    if(last){
-      resumeHint.textContent = "Re-open \"" + last + "\" to continue.";
-      noteTitle.textContent = last + " — Notes";
-      quickNote.value = localStorage.getItem(last + "-notes") || "";
-    }
-
-    const lastSound = localStorage.getItem("dayzero-sound");
-    if(lastSound){
-      sound.value = lastSound;
-    }
-
     pdfFile.onchange = () => {
       const file = pdfFile.files[0];
       if(!file) return;
@@ -158,15 +175,39 @@
       noteMsg.textContent = "";
 
       if(ext === "pdf"){
-        viewer.src = URL.createObjectURL(file);
-      } else {
-        const reader = new FileReader();
-        reader.onload = e => {
+        viewerWrap.innerHTML = `<iframe id="viewer" style="width:100%;height:100%;border:none"></iframe>`;
+        document.getElementById("viewer").src = URL.createObjectURL(file);
+      }
+      else if(ext === "docx"){
+        const r = new FileReader();
+        r.onload = e => {
+          mammoth.convertToHtml({ arrayBuffer: e.target.result })
+            .then(result => {
+              viewerWrap.innerHTML = `
+                <div style="
+                  height:100%;
+                  overflow:auto;
+                  padding:20px;
+                  font-family:system-ui;
+                  line-height:1.6;
+                ">
+                  ${result.value}
+                </div>
+              `;
+            });
+        };
+        r.readAsArrayBuffer(file);
+      }
+      else{
+        const r = new FileReader();
+        r.onload = e => {
           const safe = e.target.result
             .replace(/</g,"&lt;")
             .replace(/>/g,"&gt;");
-          viewer.srcdoc = `
+          viewerWrap.innerHTML = `
             <pre style="
+              height:100%;
+              overflow:auto;
               padding:18px;
               font-family:ui-monospace,Consolas,monospace;
               line-height:1.6;
@@ -174,7 +215,7 @@
             ">${safe}</pre>
           `;
         };
-        reader.readAsText(file);
+        r.readAsText(file);
       }
     };
 
@@ -238,3 +279,4 @@
   </script>
 </body>
 </html>
+
