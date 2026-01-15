@@ -7,22 +7,51 @@
 
   <link rel="icon" type="image/png" href="images/logo.png">
   <link rel="stylesheet" href="style.css">
+
+  <style>
+    header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .about-link{
+      font-size:.85rem;
+      opacity:.75;
+      text-decoration:underline;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    @media(max-width:640px){
+      header{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+      .todo-add{
+        display:grid;
+        grid-template-columns:1fr auto auto;
+        gap:8px;
+      }
+    }
+  </style>
 </head>
 
 <body>
   <div class="overlay">
-    <header>
-      <div>
-        <div class="brand">DayZero</div>
-        <div class="tagline">Student Survival System</div>
-        <div id="clock" style="font-size:.8rem;opacity:.7;margin-top:2px"></div>
-        
-      </div>
-      <a href="about.html" class="tile"><h3>About DayZero</h3><p>How this space works.</p></a>
-      <button id="logoutBtn" class="link">Logout</button>
-      
+      <header>
+        <div>
+          <div class="brand">DayZero</div>
+          <div class="tagline">Student Survival System</div>
+          <div id="clock" style="font-size:.8rem;opacity:.7;margin-top:2px"></div>
+        </div>
 
-    </header>
+        <div style="display:flex;gap:10px;align-items:center">
+          <a href="about.html" class="link" style="text-decoration:none">About</a>
+          <button id="logoutBtn" class="link">Logout</button>
+        </div>
+      </header>
+
 
     <section class="hero">
       <h1>Welcome back.</h1>
@@ -31,7 +60,7 @@
 
     <!-- STREAK -->
     <section style="margin-bottom:22px">
-      <div class="card" id="streakBox" style="display:flex;align-items:center;gap:14px;position:relative;overflow:hidden">
+      <div class="card" id="streakBox" style="display:flex;align-items:center;gap:14px">
         <div style="font-size:1.8rem">🔥</div>
         <div style="flex:1">
           <div style="font-weight:600;font-size:1.05rem" id="streakCount">0 Day Streak</div>
@@ -305,7 +334,7 @@
 
     function launchConfetti(){
       canvas.width=innerWidth; canvas.height=innerHeight;
-      const pieces=Array.from({length:120},()=>({
+      const pieces=Array.from({length:120},()=>( {
         x:Math.random()*canvas.width,
         y:Math.random()*canvas.height-canvas.height,
         r:Math.random()*6+4,
@@ -331,3 +360,4 @@
   </script>
 </body>
 </html>
+
