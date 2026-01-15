@@ -5,17 +5,11 @@
   <title>DayZero — Study Library</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
+
+
+  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+
   <style>
-    html, body {
-      height: 100%;
-      overflow: hidden;
-    }
-
-    .overlay {
-      height: 100vh;
-      overflow: hidden;
-    }
-
     .library-wrap{
       display:grid;
       grid-template-columns: 1.6fr 1fr;
@@ -28,21 +22,20 @@
       gap:18px;
     }
     .hint{font-size:.8rem;opacity:.6;margin-top:6px}
-    #viewerWrap{
-      width:100%;
-      height:100%;
-      border-radius:14px;
-      background:#fff;
-      overflow:auto;   /* only this area scrolls */
-    }
 
-    #viewer{
-      width:100%;
-      height:100%;
-      border:none;
-    }
     @media(max-width:900px){
       .library-wrap{grid-template-columns:1fr;height:auto}
+    }
+
+    
+    @media (max-width: 900px) {
+      #viewerWrap {
+        min-height: 60vh;
+        display: block;
+      }
+      .library-wrap section.card {
+        height: auto !important;
+      }
     }
   </style>
 </head>
@@ -60,9 +53,7 @@
 
       <!-- LEFT -->
       <section class="card" style="height:100%">
-        <div id="viewerWrap">
-          <iframe id="viewer"></iframe>
-        </div>
+        <div id="viewerWrap" style="width:100%;height:100%;border-radius:14px;overflow:hidden;background:#fff"></div>
       </section>
 
       <!-- RIGHT -->
@@ -70,7 +61,8 @@
 
         <div class="card">
           <h3>Open File</h3>
-          <input type="file" id="pdfFile" accept=".pdf,.txt,.md,.html,.log,.json,.docx">
+          <input type="file" id="pdfFile" accept=".pdf,.txt,.md,.html,.log,.json,.docx" hidden>
+          <button id="openBtn" class="link" style="margin-top:6px">Open File</button>
           <div id="currentFile" class="hint"></div>
           <div id="resumeHint" class="hint"></div>
         </div>
@@ -123,15 +115,12 @@
     </div>
   </div>
 
-  <!-- Mammoth for Word files -->
-  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
-
   <script>
     const t = localStorage.getItem("dayzero-theme") || "pastel";
     document.documentElement.setAttribute("data-theme", t);
 
     const pdfFile = document.getElementById("pdfFile");
-    const viewer = document.getElementById("viewer");
+    const openBtn = document.getElementById("openBtn");
     const viewerWrap = document.getElementById("viewerWrap");
     const currentFile = document.getElementById("currentFile");
     const resumeHint = document.getElementById("resumeHint");
@@ -158,6 +147,8 @@
 
     let activePDF = null;
 
+    openBtn.onclick = () => pdfFile.click();
+
     pdfFile.onchange = () => {
       const file = pdfFile.files[0];
       if(!file) return;
@@ -174,13 +165,18 @@
       quickNote.value = localStorage.getItem(activePDF + "-notes") || "";
       noteMsg.textContent = "";
 
+      viewerWrap.innerHTML = "";
+
       if(ext === "pdf"){
-        viewerWrap.innerHTML = `<iframe id="viewer" style="width:100%;height:100%;border:none"></iframe>`;
-        document.getElementById("viewer").src = URL.createObjectURL(file);
+        const url = URL.createObjectURL(file);
+        viewerWrap.innerHTML = `
+          <embed src="${url}" type="application/pdf"
+            style="width:100%;height:100%;border:0;border-radius:14px">
+        `;
       }
       else if(ext === "docx"){
-        const r = new FileReader();
-        r.onload = e => {
+        const reader = new FileReader();
+        reader.onload = e => {
           mammoth.convertToHtml({ arrayBuffer: e.target.result })
             .then(result => {
               viewerWrap.innerHTML = `
@@ -195,19 +191,18 @@
                 </div>
               `;
             });
+
         };
-        r.readAsArrayBuffer(file);
+        reader.readAsArrayBuffer(file);
       }
-      else{
-        const r = new FileReader();
-        r.onload = e => {
+      else {
+        const reader = new FileReader();
+        reader.onload = e => {
           const safe = e.target.result
             .replace(/</g,"&lt;")
             .replace(/>/g,"&gt;");
           viewerWrap.innerHTML = `
             <pre style="
-              height:100%;
-              overflow:auto;
               padding:18px;
               font-family:ui-monospace,Consolas,monospace;
               line-height:1.6;
@@ -215,7 +210,7 @@
             ">${safe}</pre>
           `;
         };
-        r.readAsText(file);
+        reader.readAsText(file);
       }
     };
 
@@ -279,4 +274,5 @@
   </script>
 </body>
 </html>
+
 
