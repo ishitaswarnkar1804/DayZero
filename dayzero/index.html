@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="pastel">
+<head>
+  <meta charset="UTF-8">
+  <title>DayZero — Student Survival System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="overlay">
+    <header>
+      <div>
+        <div class="brand">DayZero</div>
+        <div class="tagline">Student Survival System</div>
+        <div id="clock" style="font-size:.8rem;opacity:.7;margin-top:2px"></div>
+        
+      </div>
+      <a href="about.html" class="tile"><h3>About DayZero</h3><p>How this space works.</p></a>
+      <button id="logoutBtn" class="link">Logout</button>
+      
+
+    </header>
+
+    <section class="hero">
+      <h1>Welcome back.</h1>
+      <p>This is your calm corner in a loud world. Reset. Refocus. Survive student life—one soft step at a time.</p>
+    </section>
+
+    <!-- STREAK -->
+    <section style="margin-bottom:22px">
+      <div class="card" id="streakBox" style="display:flex;align-items:center;gap:14px;position:relative;overflow:hidden">
+        <div style="font-size:1.8rem">🔥</div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:1.05rem" id="streakCount">0 Day Streak</div>
+          <div style="font-size:.85rem;opacity:.7" id="streakMsg"></div>
+          <div id="milestone" style="margin-top:4px;font-size:.8rem;font-weight:600;opacity:.85"></div>
+          <details style="margin-top:6px">
+            <summary style="cursor:pointer;font-size:.75rem;opacity:.6">View history</summary>
+            <div id="streakHistory" style="margin-top:6px;font-size:.75rem;opacity:.7"></div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="top-row">
+      <div class="card">
+        <h3>How are you feeling?</h3>
+        <select id="mood">
+          <option>🌤 Trying my best</option>
+          <option>😴 Exhausted</option>
+          <option>😌 Calm</option>
+          <option>🔥 Motivated</option>
+          <option>🌧 Low but going on</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <h3>Today's Goal</h3>
+        <select id="goal">
+          <option>25 minutes deep work</option>
+          <option>Finish one task</option>
+          <option>Revise one topic</option>
+          <option>Just show up</option>
+          <option value="__custom__">Custom…</option>
+        </select>
+        <input id="customGoal" placeholder="Your goal…" style="display:none;margin-top:6px">
+      </div>
+
+      <div class="card">
+        <h3>Choose Your Vibe</h3>
+        <select id="theme">
+          <option value="pastel">🌸 Pastel Dream</option>
+          <option value="night">🌌 Night Study</option>
+          <option value="forest">🌿 Forest Calm</option>
+          <option value="focus">🔥 Focus Mode</option>
+          <option value="ocean">🌊 Ocean Blue</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="todo-box">
+      <div class="card">
+        <h3>Your Tasks</h3>
+        <div class="todo-add">
+          <input id="todoText" placeholder="Add a task…">
+          <input id="todoTime" type="time">
+          <button id="addTodo">+</button>
+        </div>
+        <div id="todoEmpty" class="todo-empty">Nothing here yet. Add one small thing 🌱</div>
+        <div id="todoList"></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <a href="library.html" class="tile"><h3>Study Library</h3><p>Read PDFs in calm focus.</p></a>
+      <a href="notes.html" class="tile"><h3>Notes Vault</h3><p>Your digital notebook.</p></a>
+      <a href="rant.html" class="tile"><h3>Rant Board</h3><p>Let it out.</p></a>
+      <a href="studywith.html" class="tile"><h3>Study on YouTube?</h3><p>Your quiet companion.</p></a>
+      <a href="focus.html" class="tile"><h3>Focus Zone</h3><p>Gentle timers & lock-in space.</p></a>
+      <a href="panic.html" class="tile"><h3>Exam Panic Mode</h3><p>You are safe.</p></a>
+    </section>
+  </div>
+
+  <canvas id="confetti" style="position:fixed;inset:0;pointer-events:none;z-index:9999"></canvas>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBGKV7l1uIvfLus0BtPyEDPNUDT66nd1Uc",
+      authDomain: "dayzero-33d92.firebaseapp.com",
+      projectId: "dayzero-33d92",
+      storageBucket: "dayzero-33d92.firebasestorage.app",
+      messagingSenderId: "598720046200",
+      appId: "1:598720046200:web:55a022f838bb65c42fb98d"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const mood = document.getElementById("mood");
+    const goal = document.getElementById("goal");
+    const customGoal = document.getElementById("customGoal");
+    const theme = document.getElementById("theme");
+    const todoText = document.getElementById("todoText");
+    const todoTime = document.getElementById("todoTime");
+    const addTodo = document.getElementById("addTodo");
+    const todoList = document.getElementById("todoList");
+    const empty = document.getElementById("todoEmpty");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const clock = document.getElementById("clock");
+
+    const streakCount = document.getElementById("streakCount");
+    const streakMsg = document.getElementById("streakMsg");
+    const milestoneEl = document.getElementById("milestone");
+    const historyEl = document.getElementById("streakHistory");
+
+    let uid = null;
+    let todos = [];
+
+    function applyTheme(v){
+      document.documentElement.setAttribute("data-theme", v);
+      localStorage.setItem("dayzero-theme", v);
+    }
+
+    function updateClock(){
+      const d = new Date();
+      clock.textContent =
+        d.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"}) +
+        " · " + d.toLocaleTimeString();
+    }
+    setInterval(updateClock,1000);
+    updateClock();
+
+    function milestoneText(n){
+      if(n===7) return "🌱 One full week of showing up.";
+      if(n===14) return "🌿 Two weeks. You’re building a habit.";
+      if(n===30) return "🌸 30 days. This is real consistency.";
+      if(n===60) return "🌼 60 days. You changed your rhythm.";
+      if(n===100) return "🏆 100 days. That’s rare discipline.";
+      return "";
+    }
+
+    function updateStreakUI(streak, missed){
+      streakCount.textContent = `${streak} Day Streak`;
+      if(missed) streakMsg.textContent = "It’s okay to stumble. Today is a fresh start.";
+      else if(streak<=1) streakMsg.textContent = "You showed up today.";
+      else streakMsg.textContent = "Consistency builds quiet strength.";
+      milestoneEl.textContent = milestoneText(streak);
+    }
+
+    async function handleStreak(ref, data){
+      const today = new Date().toDateString();
+      let streak = data.streak || 0;
+      let last = data.lastVisit || null;
+      let history = data.streakHistory || [];
+
+      let increased=false, missed=false;
+
+      if(last!==today){
+        if(last){
+          const diff=(new Date(today)-new Date(last))/(1000*60*60*24);
+          if(diff===1){streak++; increased=true;}
+          else{streak=1; missed=true;}
+        } else {streak=1; increased=true;}
+
+        history.push(today);
+        await ref.set({
+          streak, lastVisit: today,
+          streakHistory: history.slice(-30)
+        },{merge:true});
+      }
+
+      updateStreakUI(streak, missed);
+      historyEl.innerHTML = history.slice().reverse().map(d=>`• ${d}`).join("<br>");
+      if(increased) launchConfetti();
+    }
+
+    auth.onAuthStateChanged(async user=>{
+      if(!user){ location.href="login.html"; return; }
+
+      uid=user.uid;
+      const ref=db.collection("users").doc(uid);
+      const snap=await ref.get();
+
+      if(snap.exists){
+        const d=snap.data();
+        mood.value=d.mood||mood.value;
+        theme.value=d.theme||theme.value;
+        applyTheme(theme.value);
+
+        if(d.goal&&d.goal.custom){
+          goal.value="__custom__"; customGoal.style.display="block"; customGoal.value=d.goal.text;
+        } else if(typeof d.goal==="string"){
+          goal.value=d.goal; customGoal.style.display="none";
+        }
+
+        const today=new Date().toDateString();
+        if(d.todoDate!==today) todos=(d.todos||[]).filter(t=>!t.done);
+        else todos=d.todos||[];
+
+        render();
+        handleStreak(ref,d);
+      } else {
+        await ref.set({streak:1,lastVisit:new Date().toDateString(),streakHistory:[new Date().toDateString()]});
+        updateStreakUI(1,false);
+      }
+
+      const saveBase=()=>ref.set({
+        mood:mood.value,
+        goal:goal.value==="__custom__"?{custom:true,text:customGoal.value}:goal.value,
+        theme:theme.value,
+        todos, todoDate:new Date().toDateString()
+      },{merge:true});
+
+      mood.onchange=saveBase;
+      theme.onchange=()=>{applyTheme(theme.value);saveBase();};
+      goal.onchange=()=>{
+        customGoal.style.display=goal.value==="__custom__"?"block":"none";
+        saveBase();
+      };
+      customGoal.oninput=saveBase;
+    });
+
+    logoutBtn.onclick=()=>auth.signOut().then(()=>location.href="login.html");
+
+    function render(){
+      todoList.innerHTML="";
+      if(!todos.length){empty.style.display="block";return;}
+      empty.style.display="none";
+
+      todos.forEach((t,i)=>{
+        const el=document.createElement("div");
+        el.className="todo-item"+(t.done?" done":"");
+
+        const text=document.createElement("span");
+        text.textContent=t.text;
+        text.onclick=e=>{
+          e.stopPropagation();
+          const v=prompt("Edit task",t.text);
+          if(v){t.text=v;saveTodos();}
+        };
+
+        const time=document.createElement("span");
+        time.textContent=t.time||"";
+
+        const del=document.createElement("button");
+        del.textContent="✕";
+        del.className="link";
+        del.onclick=e=>{
+          e.stopPropagation();
+          todos.splice(i,1);
+          saveTodos();
+        };
+
+        el.onclick=()=>{t.done=!t.done;saveTodos();};
+        el.append(text,time,del);
+        todoList.appendChild(el);
+      });
+    }
+
+    function saveTodos(){
+      if(!uid)return;
+      db.collection("users").doc(uid).set({
+        todos, todoDate:new Date().toDateString()
+      },{merge:true});
+      render();
+    }
+
+    addTodo.onclick=()=>{
+      if(!todoText.value.trim())return;
+      todos.push({text:todoText.value.trim(),time:todoTime.value,done:false});
+      todoText.value="";todoTime.value="";
+      saveTodos();
+    };
+
+    const canvas=document.getElementById("confetti");
+    const ctx=canvas.getContext("2d");
+
+    function launchConfetti(){
+      canvas.width=innerWidth; canvas.height=innerHeight;
+      const pieces=Array.from({length:120},()=>({
+        x:Math.random()*canvas.width,
+        y:Math.random()*canvas.height-canvas.height,
+        r:Math.random()*6+4,
+        vy:Math.random()*3+2,
+        vx:(Math.random()-.5)*2
+      }));
+
+      let t=0;
+      function draw(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        pieces.forEach(p=>{
+          p.y+=p.vy; p.x+=p.vx;
+          ctx.beginPath();
+          ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+          ctx.fillStyle="rgba(255,180,90,.8)";
+          ctx.fill();
+        });
+        if(t++<120) requestAnimationFrame(draw);
+        else ctx.clearRect(0,0,canvas.width,canvas.height);
+      }
+      draw();
+    }
+  </script>
+</body>
+</html>

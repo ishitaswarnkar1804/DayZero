@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="pastel">
+<head>
+  <meta charset="UTF-8">
+  <title>DayZero — Study Library</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .library-wrap{
+      display:grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap:18px;
+      height: calc(100vh - 140px);
+    }
+    .side-stack{
+      display:grid;
+      grid-template-rows:auto auto 1fr;
+      gap:18px;
+    }
+    .hint{font-size:.8rem;opacity:.6;margin-top:6px}
+    @media(max-width:900px){
+      .library-wrap{grid-template-columns:1fr;height:auto}
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <header>
+      <div>
+        <div class="brand">Study Library</div>
+        <div class="tagline">Read in calm focus</div>
+      </div>
+      <a href="index.html" class="link">Back</a>
+    </header>
+
+    <div class="library-wrap">
+
+      <!-- LEFT -->
+      <section class="card" style="height:100%">
+        <iframe id="viewer" style="width:100%;height:100%;border:none;border-radius:14px;background:#fff"></iframe>
+      </section>
+
+      <!-- RIGHT -->
+      <div class="side-stack">
+
+        <div class="card">
+          <h3>Open File</h3>
+          <input type="file" id="pdfFile" accept=".pdf,.txt,.md,.html,.log,.json">
+          <div id="currentFile" class="hint"></div>
+          <div id="resumeHint" class="hint"></div>
+        </div>
+
+        <div class="card">
+          <h3>Ambient Sound</h3>
+          <select id="sound">
+            <option value="">None</option>
+            <option value="audio/calm.mp3">Calm Sky</option>
+            <option value="audio/evening.mp3">Evening Glow</option>
+            <option value="audio/forest_rain.mp3">Forest Rain</option>
+            <option value="audio/moonlight.mp3">Moonlight</option>
+            <option value="audio/ocean_waves.mp3">Ocean Waves</option>
+            <option value="audio/river.mp3">River Flow</option>
+          </select>
+
+          <div style="margin-top:8px">
+            <button id="playSound" class="link">Play</button>
+            <button id="stopSound" class="link" style="margin-left:6px">Stop</button>
+          </div>
+          <audio id="player" loop></audio>
+        </div>
+
+        <div class="card">
+          <h3 id="noteTitle">Quick Notes</h3>
+          <textarea id="quickNote" placeholder="Write or paste notes…" style="width:100%;height:160px;border-radius:12px;padding:10px"></textarea>
+          <button id="saveNote" class="link" style="margin-top:8px">Save Notes</button>
+
+          <div id="savePanel" style="display:none;margin-top:8px">
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button id="saveExisting" class="link">Save to existing</button>
+              <button id="saveNew" class="link">Save as new</button>
+            </div>
+
+            <div id="existingWrap" style="display:none;margin-top:8px">
+              <select id="existingList" style="width:100%"></select>
+              <button id="confirmExisting" class="link" style="margin-top:6px">Append</button>
+            </div>
+
+            <div id="newWrap" style="display:none;margin-top:8px">
+              <input id="newTitle" placeholder="New note title…" style="width:100%">
+              <button id="confirmNew" class="link" style="margin-top:6px">Create</button>
+            </div>
+          </div>
+
+          <div id="noteMsg" class="hint"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const t = localStorage.getItem("dayzero-theme") || "pastel";
+    document.documentElement.setAttribute("data-theme", t);
+
+    const pdfFile = document.getElementById("pdfFile");
+    const viewer = document.getElementById("viewer");
+    const currentFile = document.getElementById("currentFile");
+    const resumeHint = document.getElementById("resumeHint");
+
+    const sound = document.getElementById("sound");
+    const player = document.getElementById("player");
+    const playSound = document.getElementById("playSound");
+    const stopSound = document.getElementById("stopSound");
+
+    const quickNote = document.getElementById("quickNote");
+    const saveNote = document.getElementById("saveNote");
+    const noteMsg = document.getElementById("noteMsg");
+    const noteTitle = document.getElementById("noteTitle");
+
+    const savePanel = document.getElementById("savePanel");
+    const saveExisting = document.getElementById("saveExisting");
+    const saveNew = document.getElementById("saveNew");
+    const existingWrap = document.getElementById("existingWrap");
+    const existingList = document.getElementById("existingList");
+    const confirmExisting = document.getElementById("confirmExisting");
+    const newWrap = document.getElementById("newWrap");
+    const newTitle = document.getElementById("newTitle");
+    const confirmNew = document.getElementById("confirmNew");
+
+    let activePDF = null;
+
+    const last = localStorage.getItem("dayzero-last-pdf");
+    if(last){
+      resumeHint.textContent = "Re-open \"" + last + "\" to continue.";
+      noteTitle.textContent = last + " — Notes";
+      quickNote.value = localStorage.getItem(last + "-notes") || "";
+    }
+
+    const lastSound = localStorage.getItem("dayzero-sound");
+    if(lastSound){
+      sound.value = lastSound;
+    }
+
+    pdfFile.onchange = () => {
+      const file = pdfFile.files[0];
+      if(!file) return;
+
+      activePDF = file.name;
+      localStorage.setItem("dayzero-last-pdf", activePDF);
+
+      const ext = file.name.split(".").pop().toLowerCase();
+
+      noteTitle.textContent = activePDF + " — Notes";
+      currentFile.textContent = activePDF;
+      resumeHint.textContent = "";
+
+      quickNote.value = localStorage.getItem(activePDF + "-notes") || "";
+      noteMsg.textContent = "";
+
+      if(ext === "pdf"){
+        viewer.src = URL.createObjectURL(file);
+      } else {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const safe = e.target.result
+            .replace(/</g,"&lt;")
+            .replace(/>/g,"&gt;");
+          viewer.srcdoc = `
+            <pre style="
+              padding:18px;
+              font-family:ui-monospace,Consolas,monospace;
+              line-height:1.6;
+              white-space:pre-wrap;
+            ">${safe}</pre>
+          `;
+        };
+        reader.readAsText(file);
+      }
+    };
+
+    quickNote.oninput = () => {
+      if(activePDF){
+        localStorage.setItem(activePDF + "-notes", quickNote.value);
+      }
+    };
+
+    playSound.onclick = () => {
+      if(!sound.value) return;
+      localStorage.setItem("dayzero-sound", sound.value);
+      player.pause();
+      player.currentTime = 0;
+      player.src = sound.value;
+      player.play().catch(()=>{});
+    };
+
+    stopSound.onclick = () => player.pause();
+
+    saveNote.onclick = () => {
+      if(!activePDF){
+        noteMsg.textContent = "Open a file first.";
+        return;
+      }
+      savePanel.style.display = "block";
+    };
+
+    saveExisting.onclick = () => {
+      existingWrap.style.display = "block";
+      newWrap.style.display = "none";
+      existingList.innerHTML = "";
+      Object.keys(localStorage).filter(k=>k.endsWith("-notes")).forEach(k=>{
+        const o = document.createElement("option");
+        o.value = k;
+        o.textContent = k.replace("-notes","");
+        existingList.appendChild(o);
+      });
+    };
+
+    saveNew.onclick = () => {
+      newWrap.style.display = "block";
+      existingWrap.style.display = "none";
+    };
+
+    confirmExisting.onclick = () => {
+      const key = existingList.value;
+      const old = localStorage.getItem(key) || "";
+      localStorage.setItem(key, old + "\n\n" + quickNote.value);
+      noteMsg.textContent = "Appended to existing note.";
+      savePanel.style.display = "none";
+    };
+
+    confirmNew.onclick = () => {
+      if(!newTitle.value.trim()) return;
+      localStorage.setItem(newTitle.value.trim() + "-notes", quickNote.value);
+      noteMsg.textContent = "Saved as new note.";
+      savePanel.style.display = "none";
+      newTitle.value = "";
+    };
+  </script>
+</body>
+</html>

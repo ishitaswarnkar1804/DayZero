@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="pastel">
+<head>
+  <meta charset="UTF-8">
+  <title>DayZero — Focus Zone</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .focus-wrap{
+      min-height: calc(100vh - 120px);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:24px;
+      text-align:center;
+    }
+
+    .ring{
+      width:260px;
+      height:260px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:2.8rem;
+      font-weight:600;
+      background:rgba(255,255,255,.7);
+      box-shadow:0 20px 60px rgba(0,0,0,.12);
+      animation:pulse 4s ease-in-out infinite;
+    }
+
+    body.running .ring{
+      animation: breathe 6s ease-in-out infinite;
+    }
+
+    @keyframes pulse{
+      0%,100%{transform:scale(1)}
+      50%{transform:scale(1.03)}
+    }
+
+    @keyframes breathe{
+      0%{transform:scale(1)}
+      50%{transform:scale(1.08)}
+      100%{transform:scale(1)}
+    }
+
+    .controls,.presets{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:center;
+    }
+
+    .presets button,
+    .controls button{
+      padding:6px 14px;
+      border-radius:999px;
+      background:rgba(255,255,255,.65);
+      border:none;
+      cursor:pointer;
+      font-family:inherit;
+    }
+
+    .custom{
+      display:flex;
+      gap:6px;
+      justify-content:center;
+      align-items:center;
+    }
+
+    .custom input{
+      width:70px;
+      padding:6px;
+      border-radius:10px;
+      border:none;
+      outline:none;
+      text-align:center;
+      background:rgba(255,255,255,.65);
+    }
+
+    .sound{margin-top:8px}
+    .end-msg{opacity:.7;font-size:1rem;display:none}
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <header>
+      <div>
+        <div class="brand">Focus Zone</div>
+        <div class="tagline">You only need to start. Just close your eyes and concentrate</div>
+      </div>
+      <a href="index.html" class="link">Back</a>
+    </header>
+
+    <div class="focus-wrap">
+      <div class="ring" id="display">25:00</div>
+
+      <div class="presets">
+        <button onclick="setMinutes(5)">5 min</button>
+        <button onclick="setMinutes(25)">25 min</button>
+        <button onclick="setMinutes(50)">50 min</button>
+      </div>
+
+      <div class="custom">
+        <span>Custom</span>
+        <input id="customMin" type="number" min="1" placeholder="min">
+        <button onclick="applyCustom()">Set</button>
+      </div>
+
+      <div class="controls">
+        <button id="startBtn">Start</button>
+        <button id="pauseBtn" style="display:none">Pause</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+
+      <div class="sound">
+        <select id="sound">
+          <option value="">No sound</option>
+          <option value="audio/calm.mp3">Calm Sky</option>
+          <option value="audio/evening.mp3">Evening Glow</option>
+          <option value="audio/forest_rain.mp3">Forest Rain</option>
+          <option value="audio/moonlight.mp3">Moonlight</option>
+          <option value="audio/ocean_waves.mp3">Ocean Waves</option>
+          <option value="audio/river.mp3">River Flow</option>
+        </select>
+      </div>
+
+      <div class="end-msg" id="endMsg">You showed up. That’s enough.</div>
+      <audio id="player" loop></audio>
+    </div>
+  </div>
+
+  <script>
+    // THEME SYNC
+    const t = localStorage.getItem("dayzero-theme") || "pastel";
+    document.documentElement.setAttribute("data-theme", t);
+
+    const display = document.getElementById("display");
+    const startBtn = document.getElementById("startBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const customMin = document.getElementById("customMin");
+    const endMsg = document.getElementById("endMsg");
+
+    const sound = document.getElementById("sound");
+    const player = document.getElementById("player");
+
+    let total = 25 * 60;
+    let left = total;
+    let timer = null;
+
+    function render(){
+      const m = String(Math.floor(left / 60)).padStart(2,"0");
+      const s = String(left % 60).padStart(2,"0");
+      display.textContent = `${m}:${s}`;
+    }
+
+    function setMinutes(m){
+      stop();
+      total = m * 60;
+      left = total;
+      render();
+      endMsg.style.display = "none";
+    }
+
+    function applyCustom(){
+      const v = parseInt(customMin.value);
+      if(v > 0) setMinutes(v);
+    }
+
+    function tick(){
+      if(left <= 0){
+        stop();
+        endMsg.style.display = "block";
+        return;
+      }
+      left--;
+      render();
+    }
+
+    function start(){
+      if(timer) return;
+      document.body.classList.add("running");
+      timer = setInterval(tick,1000);
+      startBtn.style.display="none";
+      pauseBtn.style.display="inline-block";
+
+      if(sound.value){
+        player.src = sound.value;
+        player.play().catch(()=>{});
+      }
+    }
+
+    function stop(){
+      clearInterval(timer);
+      timer = null;
+      document.body.classList.remove("running");
+      startBtn.style.display="inline-block";
+      pauseBtn.style.display="none";
+      player.pause();
+    }
+
+    startBtn.onclick = start;
+    pauseBtn.onclick = stop;
+    resetBtn.onclick = ()=>{
+      stop();
+      left = total;
+      render();
+      endMsg.style.display = "none";
+    };
+
+    sound.onchange = ()=>{
+      if(timer){
+        player.pause();
+        if(sound.value){
+          player.src = sound.value;
+          player.play().catch(()=>{});
+        }
+      }
+    };
+
+    render();
+  </script>
+</body>
+</html>

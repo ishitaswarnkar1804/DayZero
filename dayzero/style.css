@@ -1,0 +1,141 @@
+@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap");
+
+/* ================= THEME VARIABLES ================= */
+:root{
+  --bg1:#f6c1ff; --bg2:#c1d9ff; --bg3:#c1ffd7; --bg4:#fff3c1;
+  --card:rgba(252, 248, 248, 0.78);
+  --overlay:rgb(255, 255, 255);
+  --text:#2b2b2b;
+  --muted:rgba(0,0,0,.55);
+  --ring:rgba(0,0,0,.12);
+}
+
+[data-theme="pastel"]{
+  --bg1:#f6c1ff; --bg2:#c1d9ff; --bg3:#c1ffd7; --bg4:#fff3c1;
+  --card:rgba(255,255,255,.78); --overlay:rgba(255,255,255,.38); --text:#2b2b2b;
+}
+[data-theme="night"]{
+  --bg1:#0f2027; --bg2:#203a43; --bg3:#2c5364; --bg4:#141e30;
+  --card:rgba(30,40,55,.72); --overlay:rgba(10,15,25,.55); --text:#a69797; --muted:#2d2a2a99;
+}
+[data-theme="forest"]{
+  --bg1:#a8e6cf; --bg2:#dcedc1; --bg3:#b7e4c7; --bg4:#95d5b2;
+  --card:rgba(240,255,246,.8); --overlay:rgba(225,245,235,.45); --text:#1f3d2b;
+}
+[data-theme="focus"]{
+  --bg1:#ffecd2; --bg2:#fcb69f; --bg3:#ffd6a5; --bg4:#fdffb6;
+  --card:rgba(255,255,255,.85); --overlay:rgba(255,250,235,.5); --text:#1c1c1c;
+}
+[data-theme="ocean"]{
+  --bg1:#a1c4fd; --bg2:#c2e9fb; --bg3:#b5f1ff; --bg4:#d0f4ff;
+  --card:rgba(235,248,255,.8); --overlay:rgba(220,245,255,.45); --text:#0f2a44;
+}
+
+/* ================= BASE ================= */
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Quicksand",system-ui,sans-serif}
+html,body{height:100%}
+body{
+  color:var(--text);
+  background:linear-gradient(-45deg,var(--bg1),var(--bg2),var(--bg3),var(--bg4));
+  background-size:500% 500%;
+  animation:bg 20s ease infinite;
+}
+@keyframes bg{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+.overlay{
+  min-height:100%;
+  backdrop-filter:blur(18px);
+  background:var(--overlay);
+  padding:clamp(18px,4vw,48px);
+}
+
+/* ================= HEADER / HERO ================= */
+header{
+  display:flex; justify-content:space-between; align-items:center; gap:12px;
+  margin-bottom:22px;
+}
+.brand{font-size:2rem;font-weight:700}
+.tagline{opacity:.7;font-size:.9rem}
+.hero{max-width:720px;margin-bottom:16px}
+.hero h1{font-size:clamp(2rem,6vw,3rem);margin-bottom:8px}
+.hero p{opacity:.75}
+
+/* ================= CONTROLS ================= */
+.top-row{
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:18px; margin:18px 0;
+}
+.card{
+  background:var(--card);
+  border-radius:18px; padding:16px;
+  box-shadow:0 10px 30px var(--ring);
+}
+.card h3{margin-bottom:8px;font-size:1rem}
+
+select,input,button{
+  padding:10px; border-radius:10px; border:none; outline:none;
+  background:rgba(255,255,255,.9);
+  color:inherit;
+}
+select:focus,input:focus{box-shadow:0 0 0 2px rgba(0,0,0,.12)}
+
+.todo-box{margin-bottom:28px}
+.todo-add{display:grid; grid-template-columns:1fr auto auto; gap:8px; margin-bottom:10px}
+.todo-item{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px; border-radius:10px; background:rgba(255,255,255,.85);
+  margin-bottom:6px; cursor:pointer; transition:transform .1s ease, background .15s ease;
+}
+.todo-item:hover{background:rgba(255,255,255,.95)}
+.todo-item:active{transform:scale(.98)}
+.todo-item.done{text-decoration:line-through; opacity:.45}
+.todo-empty{opacity:.6; font-size:.9rem}
+
+/* ================= GRID ================= */
+.grid{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:18px;
+}
+.tile{
+  background:var(--card);
+  border-radius:18px; padding:20px;
+  text-decoration:none; color:inherit;
+  box-shadow:0 10px 30px var(--ring);
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+.tile:hover{transform:translateY(-4px); box-shadow:0 16px 40px var(--ring)}
+
+/* ================= LOGIN ================= */
+.center{min-height:100vh; display:grid; place-items:center}
+.auth{
+  width:320px; background:var(--card);
+  padding:28px; border-radius:20px; text-align:center;
+  box-shadow:0 16px 40px var(--ring);
+}
+.auth input{width:100%; margin:6px 0}
+.auth .primary{width:100%; margin-top:8px; background:#000; color:#fff}
+
+/* ================= BUTTONS ================= */
+.link{
+  width:auto; background:transparent; color:inherit;
+  border:1px solid currentColor; padding:8px 14px;
+  border-radius:999px; cursor:pointer;
+  transition:background .2s ease, transform .15s ease;
+}
+.link:hover{background:rgba(0,0,0,.06)}
+.link:active{transform:scale(.96)}
+header .link{width:auto}
+
+/* ================= RESPONSIVE ================= */
+@media(max-width:720px){
+  .top-row{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  header{flex-direction:column; align-items:flex-start}
+}
+@media (max-width: 900px) {
+  .library-wrap {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+}

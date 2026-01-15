@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DayZero — Welcome</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="center">
+
+  <div class="auth">
+    <h2 style="margin-bottom:4px">DayZero</h2>
+    <p id="modeText" style="opacity:.7;margin-bottom:16px">Create your account</p>
+
+    <div style="display:grid;gap:10px;margin-bottom:12px">
+      <input id="email" type="email" placeholder="Email address">
+      <input id="password" type="password" placeholder="Password">
+    </div>
+
+    <button id="actionBtn" class="primary">Create Account</button>
+
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
+      <button id="toggleBtn" class="link">Already have an account?</button>
+      <button id="forgotBtn" class="link" style="display:none">Forgot password?</button>
+    </div>
+
+    <div style="margin-top:14px;border-top:1px solid rgba(0,0,0,.08);padding-top:10px">
+      <p style="font-size:.75rem;opacity:.6;line-height:1.4">
+        Password reset emails may go to <b>Spam</b> the first time.
+        Mark them “Not Spam” so future mails reach your inbox.
+      </p>
+    </div>
+
+    <p id="msg" style="color:crimson;font-size:.85rem;margin-top:8px"></p>
+  </div>
+
+  <!-- Firebase (Universal CDN) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBGKV7l1uIvfLus0BtPyEDPNUDT66nd1Uc",
+      authDomain: "dayzero-33d92.firebaseapp.com",
+      projectId: "dayzero-33d92",
+      storageBucket: "dayzero-33d92.firebasestorage.app",
+      messagingSenderId: "598720046200",
+      appId: "1:598720046200:web:55a022f838bb65c42fb98d"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    const email = document.getElementById("email");
+    const password = document.getElementById("password");
+    const actionBtn = document.getElementById("actionBtn");
+    const toggleBtn = document.getElementById("toggleBtn");
+    const forgotBtn = document.getElementById("forgotBtn");
+    const modeText = document.getElementById("modeText");
+    const msg = document.getElementById("msg");
+
+    let signup = true;
+
+    function updateMode(){
+      if(signup){
+        modeText.textContent = "Create your account";
+        actionBtn.textContent = "Create Account";
+        toggleBtn.textContent = "Already have an account?";
+        forgotBtn.style.display = "none";
+      } else {
+        modeText.textContent = "Welcome back";
+        actionBtn.textContent = "Login";
+        toggleBtn.textContent = "Create a new account";
+        forgotBtn.style.display = "inline-block";
+      }
+      msg.textContent = "";
+    }
+
+    updateMode();
+
+    toggleBtn.onclick = () => {
+      signup = !signup;
+      updateMode();
+    };
+
+    actionBtn.onclick = () => {
+      msg.textContent = "";
+      if(signup){
+        auth.createUserWithEmailAndPassword(email.value, password.value)
+          .then(() => location.href = "index.html")
+          .catch(e => msg.textContent = e.message);
+      } else {
+        auth.signInWithEmailAndPassword(email.value, password.value)
+          .then(() => location.href = "index.html")
+          .catch(e => msg.textContent = e.message);
+      }
+    };
+
+    forgotBtn.onclick = () => {
+      if(!email.value){
+        msg.textContent = "Enter your email first.";
+        return;
+      }
+      auth.sendPasswordResetEmail(email.value)
+        .then(() => {
+          msg.style.color = "green";
+          msg.textContent = "Reset link sent. Check Inbox or Spam.";
+        })
+        .catch(e => {
+          msg.style.color = "crimson";
+          msg.textContent = e.message;
+        });
+    };
+  </script>
+
+</body>
+</html>

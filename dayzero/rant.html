@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="pastel">
+<head>
+  <meta charset="UTF-8">
+  <title>DayZero — Rant Board</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .rant-wrap{
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap:18px;
+      height: calc(100vh - 140px);
+    }
+    .rant-list{overflow:auto}
+    .rant-item{
+      padding:12px 14px;border-radius:14px;cursor:pointer;
+      font-size:.85rem;line-height:1.3;opacity:.8;
+    }
+    .rant-item.active{background:rgba(0,0,0,.06);opacity:1}
+    .editor{display:flex;flex-direction:column;height:100%}
+    .toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+    .editor [contenteditable]{
+      flex:1;border:none;outline:none;padding:16px;
+      border-radius:18px;background:rgba(255,255,255,.75);
+      font-size:1rem;line-height:1.5;overflow:auto;
+    }
+    .preview-img{max-width:100%;border-radius:12px;margin-top:10px}
+    .search{
+      margin-bottom:8px;
+    }
+    .search input{
+      width:100%;
+      padding:8px 10px;
+      border-radius:10px;
+      border:none;
+      outline:none;
+      background: rgba(255,255,255,.65);
+      font-family: inherit;
+      font-size:.85rem;
+    }
+    @media(max-width:850px){.rant-wrap{grid-template-columns:1fr;height:auto}}
+  </style>
+</head>
+<body>
+<div class="overlay">
+  <header>
+    <div>
+      <div class="brand">Rant Board</div>
+      <div class="tagline">Your private diary</div>
+    </div>
+    <a href="index.html" class="link">Back</a>
+  </header>
+
+  <div class="rant-wrap">
+
+    <div class="card">
+      <div class="search">
+        <input id="search" placeholder="Search your rants…">
+      </div>
+      <div class="rant-list" id="list"></div>
+    </div>
+
+    <div class="card editor">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div id="title" style="font-weight:600;opacity:.8">New Entry</div>
+        <div>
+          <button id="newBtn" class="link">New</button>
+          <button id="saveBtn" class="link">Save</button>
+          <button id="deleteBtn" class="link" style="display:none">Delete</button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <select id="mood">
+          <option>🌤 Okay</option>
+          <option>😞 Sad</option>
+          <option>😡 Angry</option>
+          <option>😴 Tired</option>
+          <option>💔 Hurt</option>
+          <option>✨ Hopeful</option>
+        </select>
+
+        <select id="font">
+          <option value="inherit">Default</option>
+          <option value="serif">Serif</option>
+          <option value="cursive">Cursive</option>
+          <option value="monospace">Monospace</option>
+        </select>
+
+        <button onclick="cmd('bold')" class="link">B</button>
+        <button onclick="cmd('italic')" class="link">I</button>
+        <button onclick="cmd('hiliteColor','#fff3a0')" class="link">Highlight</button>
+        <input type="file" id="imgPick" accept="image/*">
+      </div>
+
+      <div id="body" contenteditable placeholder="Write whatever you feel…"></div>
+      <img id="imgPreview" class="preview-img" style="display:none">
+    </div>
+  </div>
+</div>
+
+<script>
+  const t = localStorage.getItem("dayzero-theme")||"pastel";
+  document.documentElement.setAttribute("data-theme",t);
+
+  const list=document.getElementById("list");
+  const title=document.getElementById("title");
+  const body=document.getElementById("body");
+  const mood=document.getElementById("mood");
+  const font=document.getElementById("font");
+  const imgPick=document.getElementById("imgPick");
+  const imgPreview=document.getElementById("imgPreview");
+  const newBtn=document.getElementById("newBtn");
+  const saveBtn=document.getElementById("saveBtn");
+  const deleteBtn=document.getElementById("deleteBtn");
+  const search=document.getElementById("search");
+
+  let active=null;
+
+  function cmd(c,v=null){document.execCommand(c,false,v)}
+
+  function keys(){
+    return Object.keys(localStorage).filter(k=>k.startsWith("rant-"))
+      .sort((a,b)=>b.localeCompare(a));
+  }
+
+  function render(filter=""){
+    list.innerHTML="";
+    const ks=keys().filter(k=>{
+      const d=JSON.parse(localStorage.getItem(k));
+      const hay=(d.mood+" "+d.text+" "+new Date(d.time).toLocaleString()).toLowerCase();
+      return hay.includes(filter.toLowerCase());
+    });
+
+    if(!ks.length){
+      list.innerHTML="<div style='opacity:.6'>No entries found.</div>";return;
+    }
+
+    ks.forEach(k=>{
+      const d=JSON.parse(localStorage.getItem(k));
+      const div=document.createElement("div");
+      div.className="rant-item"+(k===active?" active":"");
+      div.innerHTML=`${d.mood} ${new Date(d.time).toLocaleString()}<br>${d.text.slice(0,50)}`;
+      div.onclick=()=>open(k);
+      list.appendChild(div);
+    });
+  }
+
+  function open(k){
+    active=k;
+    const d=JSON.parse(localStorage.getItem(k));
+    title.textContent=new Date(d.time).toLocaleString();
+    mood.value=d.mood;
+    font.value=d.font;
+    body.style.fontFamily=d.font;
+    body.innerHTML=d.text;
+    if(d.img){imgPreview.src=d.img;imgPreview.style.display="block";}
+    else imgPreview.style.display="none";
+    deleteBtn.style.display="inline-block";
+    render(search.value);
+  }
+
+  newBtn.onclick=()=>{
+    active=null;
+    title.textContent="New Entry";
+    body.innerHTML="";
+    imgPreview.style.display="none";
+    deleteBtn.style.display="none";
+  };
+
+  imgPick.onchange=()=>{
+    const f=imgPick.files[0];
+    if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{imgPreview.src=r.result;imgPreview.style.display="block";}
+    r.readAsDataURL(f);
+  };
+
+  font.onchange=()=>body.style.fontFamily=font.value;
+
+  saveBtn.onclick=()=>{
+    if(!body.innerText.trim()) return;
+    if(!active) active="rant-"+Date.now();
+    localStorage.setItem(active,JSON.stringify({
+      time:Date.now(),
+      mood:mood.value,
+      font:font.value,
+      text:body.innerHTML,
+      img:imgPreview.src||""
+    }));
+    render(search.value);
+  };
+
+  deleteBtn.onclick=()=>{
+    if(!active) return;
+    localStorage.removeItem(active);
+    active=null;
+    body.innerHTML="";
+    imgPreview.style.display="none";
+    deleteBtn.style.display="none";
+    render(search.value);
+  };
+
+  search.oninput=()=>render(search.value);
+
+  render();
+</script>
+</body>
+</html>
+

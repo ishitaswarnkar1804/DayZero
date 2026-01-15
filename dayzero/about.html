@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="pastel">
+<head>
+  <meta charset="UTF-8">
+  <title>About — DayZero</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .about-wrap{
+      max-width:900px;
+      margin:0 auto;
+      display:grid;
+      gap:18px;
+    }
+    .about-wrap h2{
+      margin-bottom:6px;
+    }
+    .about-wrap p{
+      opacity:.8;
+      line-height:1.6;
+      font-size:.95rem;
+    }
+    .step{
+      display:grid;
+      gap:6px;
+      padding:14px;
+      border-radius:16px;
+      background:rgba(255,255,255,.6);
+    }
+    .grid2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    @media(max-width:700px){
+      .grid2{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <header>
+      <div>
+        <div class="brand">About DayZero</div>
+        <div class="tagline">What this space is, and how to use it</div>
+      </div>
+      <a href="index.html" class="link">Back</a>
+    </header>
+
+    <div class="about-wrap">
+
+      <div class="card">
+        <h2>What is DayZero?</h2>
+        <p>
+          DayZero is a calm digital space made for students who feel overwhelmed.
+          It is not a productivity app. It is not a competition.
+          It is a soft system to help you reset, refocus, and survive academic life
+          one day at a time.
+        </p>
+        <p>
+          There are no leaderboards. No pressure. No noise.
+          Just rooms that help you think, breathe, study, write, and let things out.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>How it works</h2>
+        <div class="grid2">
+          <div class="step">
+            <strong>1. Login once</strong>
+            <p>Your mood, goals, streak, and tasks are saved to your account.</p>
+          </div>
+          <div class="step">
+            <strong>2. Pick a vibe</strong>
+            <p>The theme you choose follows you across every room.</p>
+          </div>
+          <div class="step">
+            <strong>3. Add tiny tasks</strong>
+            <p>To-dos reset daily. Finished ones disappear. Unfinished ones stay.</p>
+          </div>
+          <div class="step">
+            <strong>4. Show up</strong>
+            <p>Your streak grows when you return. Miss a day? It resets gently.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Rooms inside DayZero</h2>
+
+        <div class="step">
+          <strong>📚 Study Library</strong>
+          <p>
+            Upload PDFs and readable files. Read them in peace.
+            Add notes while reading. Each file gets its own notes automatically.
+            (Word files must be converted to PDF first.)
+          </p>
+        </div>
+
+        <div class="step">
+          <strong>📝 Notes Vault</strong>
+          <p>
+            Every note you save lives here. Edit, delete, and build your own
+            digital notebook.
+          </p>
+        </div>
+
+        <div class="step">
+          <strong>🗒 Rant Board</strong>
+          <p>
+            Your private diary. Write with moods, fonts, highlights, and images.
+            Everything stays on your device.
+          </p>
+        </div>
+
+        <div class="step">
+          <strong>🎥 Study With Me</strong>
+          <p>
+            Paste a YouTube study video. Take session notes beside it.
+            Save them directly into Notes Vault.
+          </p>
+        </div>
+
+        <div class="step">
+          <strong>🔥 Focus Zone</strong>
+          <p>
+            Gentle timers and breathing spaces for when your mind feels scattered.
+          </p>
+        </div>
+
+        <div class="step">
+          <strong>🌊 Exam Panic Mode</strong>
+          <p>
+            A safe page for breakdown moments. It reminds you that you are okay.
+          </p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Your data</h2>
+        <p>
+          Your login data, mood, goals, streak, and tasks are saved to your account.
+          Notes, rants, and library annotations are stored locally in your browser.
+        </p>
+        <p>
+          DayZero does not track you. It does not judge you.
+          It only remembers what you ask it to.
+        </p>
+      </div>
+
+      <div class="card" style="text-align:center">
+        <h2>You are allowed to go slow.</h2>
+        <p>
+          DayZero is not here to make you faster.
+          It is here to make you kinder to yourself.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const t = localStorage.getItem("dayzero-theme") || "pastel";
+    document.documentElement.setAttribute("data-theme", t);
+  </script>
+</body>
+</html>
