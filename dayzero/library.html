@@ -6,6 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 
+  <!-- PDF.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- Mammoth.js for Word -->
+  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+
   <style>
     .library-wrap{
       display:grid;
@@ -13,43 +18,45 @@
       gap:18px;
       height: calc(100vh - 140px);
     }
+
+    .viewer-card{
+      height:100%;
+      padding:0;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+
+    #viewerArea{
+      flex:1;
+      overflow:auto;
+      background:#fff;
+      border-radius:14px;
+      padding:16px;
+    }
+
+    #pdfCanvas{
+      display:block;
+      margin:0 auto;
+      max-width:100%;
+    }
+
     .side-stack{
       display:grid;
       grid-template-rows:auto auto 1fr;
       gap:18px;
     }
+
     .hint{font-size:.8rem;opacity:.6;margin-top:6px}
 
-    .viewer-card{
-      height:100%;
-      overflow:hidden;
-    }
-    .viewer-wrap{
-      height:100%;
-      overflow:auto;
-    }
-    #viewer{
-      width:100%;
-      height:100%;
-      border:none;
-      border-radius:14px;
-      background:#fff;
-      display:none;
-    }
-    .viewer-placeholder{
-      height:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:rgba(0,0,0,.35);
-      font-size:1rem;
-      text-align:center;
-      padding:20px;
-    }
-
     @media(max-width:900px){
-      .library-wrap{grid-template-columns:1fr;height:auto}
-      .viewer-card{min-height:60vh}
+      .library-wrap{
+        grid-template-columns:1fr;
+        height:auto;
+      }
+      .viewer-card{
+        height:60vh;
+      }
     }
   </style>
 </head>
@@ -65,13 +72,10 @@
 
     <div class="library-wrap">
 
-      <!-- LEFT: VIEWER -->
+      <!-- LEFT -->
       <section class="card viewer-card">
-        <div class="viewer-wrap" id="viewerWrap">
-          <div class="viewer-placeholder" id="placeholder">
-            Choose a file to begin reading.
-          </div>
-          <iframe id="viewer"></iframe>
+        <div id="viewerArea">
+          <div class="hint">Open a PDF or Word file to begin.</div>
         </div>
       </section>
 
@@ -80,7 +84,7 @@
 
         <div class="card">
           <h3>Open File</h3>
-          <input type="file" id="pdfFile" accept=".pdf,.txt,.md,.log,.json,.docx">
+          <input type="file" id="pdfFile" accept=".pdf,.docx,.txt,.md,.html,.log,.json">
           <div id="currentFile" class="hint"></div>
           <div id="resumeHint" class="hint"></div>
         </div>
@@ -133,16 +137,12 @@
     </div>
   </div>
 
-  <!-- Mammoth for DOCX -->
-  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
-
   <script>
     const t = localStorage.getItem("dayzero-theme") || "pastel";
     document.documentElement.setAttribute("data-theme", t);
 
     const pdfFile = document.getElementById("pdfFile");
-    const viewer = document.getElementById("viewer");
-    const placeholder = document.getElementById("placeholder");
+    const viewerArea = document.getElementById("viewerArea");
     const currentFile = document.getElementById("currentFile");
     const resumeHint = document.getElementById("resumeHint");
 
@@ -166,7 +166,7 @@
     const newTitle = document.getElementById("newTitle");
     const confirmNew = document.getElementById("confirmNew");
 
-    let activePDF = null;
+    let activeFile = null;
 
     const last = localStorage.getItem("dayzero-last-pdf");
     if(last){
@@ -180,56 +180,64 @@
       sound.value = lastSound;
     }
 
+    async function renderPDF(file){
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+
+      viewerArea.innerHTML = "";
+      for(let i=1;i<=pdf.numPages;i++){
+        const page = await pdf.getPage(i);
+        const scale = 1.3;
+        const viewport = page.getViewport({scale});
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.style.marginBottom = "16px";
+        await page.render({canvasContext:ctx, viewport}).promise;
+        viewerArea.appendChild(canvas);
+      }
+    }
+
+    function renderText(text){
+      viewerArea.innerHTML = `
+        <pre style="
+          white-space:pre-wrap;
+          line-height:1.6;
+          font-family:ui-monospace,Consolas,monospace;
+        ">${text.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</pre>
+      `;
+    }
+
     pdfFile.onchange = async () => {
       const file = pdfFile.files[0];
       if(!file) return;
 
-      activePDF = file.name;
-      localStorage.setItem("dayzero-last-pdf", activePDF);
+      activeFile = file.name;
+      localStorage.setItem("dayzero-last-pdf", activeFile);
 
       const ext = file.name.split(".").pop().toLowerCase();
-
-      noteTitle.textContent = activePDF + " — Notes";
-      currentFile.textContent = activePDF;
+      currentFile.textContent = file.name;
       resumeHint.textContent = "";
-      quickNote.value = localStorage.getItem(activePDF + "-notes") || "";
+      noteTitle.textContent = activeFile + " — Notes";
+      quickNote.value = localStorage.getItem(activeFile + "-notes") || "";
       noteMsg.textContent = "";
 
-      placeholder.style.display = "none";
-      viewer.style.display = "block";
-
       if(ext === "pdf"){
-        viewer.src = URL.createObjectURL(file);
+        await renderPDF(file);
       } else if(ext === "docx"){
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.convertToHtml({arrayBuffer});
-        viewer.srcdoc = `
-          <div style="padding:18px;line-height:1.6;font-family:system-ui">
-            ${result.value}
-          </div>
-        `;
+        const buf = await file.arrayBuffer();
+        const res = await mammoth.convertToHtml({arrayBuffer:buf});
+        viewerArea.innerHTML = `<div style="line-height:1.7">${res.value}</div>`;
       } else {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const safe = e.target.result
-            .replace(/</g,"&lt;")
-            .replace(/>/g,"&gt;");
-          viewer.srcdoc = `
-            <pre style="
-              padding:18px;
-              font-family:ui-monospace,Consolas,monospace;
-              line-height:1.6;
-              white-space:pre-wrap;
-            ">${safe}</pre>
-          `;
-        };
-        reader.readAsText(file);
+        const text = await file.text();
+        renderText(text);
       }
     };
 
     quickNote.oninput = () => {
-      if(activePDF){
-        localStorage.setItem(activePDF + "-notes", quickNote.value);
+      if(activeFile){
+        localStorage.setItem(activeFile + "-notes", quickNote.value);
       }
     };
 
@@ -245,7 +253,7 @@
     stopSound.onclick = () => player.pause();
 
     saveNote.onclick = () => {
-      if(!activePDF){
+      if(!activeFile){
         noteMsg.textContent = "Open a file first.";
         return;
       }
@@ -287,4 +295,3 @@
   </script>
 </body>
 </html>
-
