@@ -5,10 +5,6 @@
   <title>DayZero — Study Library</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
-
-
-  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
-
   <style>
     .library-wrap{
       display:grid;
@@ -23,19 +19,24 @@
     }
     .hint{font-size:.8rem;opacity:.6;margin-top:6px}
 
-    @media(max-width:900px){
-      .library-wrap{grid-template-columns:1fr;height:auto}
+    .viewer-wrap{
+      width:100%;
+      height:100%;
+      border-radius:14px;
+      overflow:hidden;
+      background:#fff;
     }
 
-    
-    @media (max-width: 900px) {
-      #viewerWrap {
-        min-height: 60vh;
-        display: block;
-      }
-      .library-wrap section.card {
-        height: auto !important;
-      }
+    .viewer-wrap iframe,
+    .viewer-wrap embed{
+      width:100%;
+      height:100%;
+      border:0;
+    }
+
+    @media(max-width:900px){
+      .library-wrap{grid-template-columns:1fr;height:auto}
+      .viewer-wrap{height:60vh}
     }
   </style>
 </head>
@@ -52,8 +53,8 @@
     <div class="library-wrap">
 
       <!-- LEFT -->
-      <section class="card" style="height:100%">
-        <div id="viewerWrap" style="width:100%;height:100%;border-radius:14px;overflow:hidden;background:#fff"></div>
+      <section class="card" style="height:100%;display:flex;flex-direction:column;">
+        <div class="viewer-wrap" id="viewerWrap"></div>
       </section>
 
       <!-- RIGHT -->
@@ -61,8 +62,7 @@
 
         <div class="card">
           <h3>Open File</h3>
-          <input type="file" id="pdfFile" accept=".pdf,.txt,.md,.html,.log,.json,.docx" hidden>
-          <button id="openBtn" class="link" style="margin-top:6px">Open File</button>
+          <input type="file" id="pdfFile" accept=".pdf,.txt,.md,.html,.log,.json">
           <div id="currentFile" class="hint"></div>
           <div id="resumeHint" class="hint"></div>
         </div>
@@ -120,7 +120,6 @@
     document.documentElement.setAttribute("data-theme", t);
 
     const pdfFile = document.getElementById("pdfFile");
-    const openBtn = document.getElementById("openBtn");
     const viewerWrap = document.getElementById("viewerWrap");
     const currentFile = document.getElementById("currentFile");
     const resumeHint = document.getElementById("resumeHint");
@@ -145,69 +144,58 @@
     const newTitle = document.getElementById("newTitle");
     const confirmNew = document.getElementById("confirmNew");
 
-    let activePDF = null;
+    let activeFile = null;
 
-    openBtn.onclick = () => pdfFile.click();
+    const last = localStorage.getItem("dayzero-last-pdf");
+    if(last){
+      resumeHint.textContent = "Re-open \"" + last + "\" to continue.";
+      noteTitle.textContent = last + " — Notes";
+      quickNote.value = localStorage.getItem(last + "-notes") || "";
+    }
+
+    const lastSound = localStorage.getItem("dayzero-sound");
+    if(lastSound){
+      sound.value = lastSound;
+    }
 
     pdfFile.onchange = () => {
       const file = pdfFile.files[0];
       if(!file) return;
 
-      activePDF = file.name;
-      localStorage.setItem("dayzero-last-pdf", activePDF);
+      activeFile = file.name;
+      localStorage.setItem("dayzero-last-pdf", activeFile);
 
       const ext = file.name.split(".").pop().toLowerCase();
 
-      noteTitle.textContent = activePDF + " — Notes";
-      currentFile.textContent = activePDF;
+      noteTitle.textContent = activeFile + " — Notes";
+      currentFile.textContent = activeFile;
       resumeHint.textContent = "";
 
-      quickNote.value = localStorage.getItem(activePDF + "-notes") || "";
+      quickNote.value = localStorage.getItem(activeFile + "-notes") || "";
       noteMsg.textContent = "";
 
       viewerWrap.innerHTML = "";
 
       if(ext === "pdf"){
-        const url = URL.createObjectURL(file);
-        viewerWrap.innerHTML = `
-          <embed src="${url}" type="application/pdf"
-            style="width:100%;height:100%;border:0;border-radius:14px">
-        `;
-      }
-      else if(ext === "docx"){
-        const reader = new FileReader();
-        reader.onload = e => {
-          mammoth.convertToHtml({ arrayBuffer: e.target.result })
-            .then(result => {
-              viewerWrap.innerHTML = `
-                <div style="
-                  height:100%;
-                  overflow:auto;
-                  padding:20px;
-                  font-family:system-ui;
-                  line-height:1.6;
-                ">
-                  ${result.value}
-                </div>
-              `;
-            });
-
-        };
-        reader.readAsArrayBuffer(file);
-      }
-      else {
+        const embed = document.createElement("embed");
+        embed.src = URL.createObjectURL(file);
+        embed.type = "application/pdf";
+        viewerWrap.appendChild(embed);
+      } else {
         const reader = new FileReader();
         reader.onload = e => {
           const safe = e.target.result
             .replace(/</g,"&lt;")
             .replace(/>/g,"&gt;");
           viewerWrap.innerHTML = `
-            <pre style="
+            <div style="
+              height:100%;
+              overflow:auto;
               padding:18px;
               font-family:ui-monospace,Consolas,monospace;
               line-height:1.6;
               white-space:pre-wrap;
-            ">${safe}</pre>
+            ">${safe}</div>
           `;
         };
         reader.readAsText(file);
@@ -215,8 +203,8 @@
     };
 
     quickNote.oninput = () => {
-      if(activePDF){
-        localStorage.setItem(activePDF + "-notes", quickNote.value);
+      if(activeFile){
+        localStorage.setItem(activeFile + "-notes", quickNote.value);
       }
     };
 
@@ -232,7 +220,7 @@
     stopSound.onclick = () => player.pause();
 
     saveNote.onclick = () => {
-      if(!activePDF){
+      if(!activeFile){
         noteMsg.textContent = "Open a file first.";
         return;
       }
@@ -274,5 +262,6 @@
   </script>
 </body>
 </html>
+
 
 
